@@ -7,13 +7,15 @@ import glob
 # temp sensor ds18b20
 # gas detector MQ-2
 
-#init w1 (one wire)
+# init w1 (one wire)
 os.system('modprobe w1-gpio')
 os.system('modprobe w1-therm')
 
 base_dir = '/sys/bus/w1/devices/'
 device_folder = glob.glob(base_dir + '28*')[0]
 device_file = device_folder + '/w1_slave'
+
+default_val = 26
 
 def read_temp_raw():
 	f = open(device_file, 'r')
@@ -23,14 +25,17 @@ def read_temp_raw():
 
 def read_temp():
 	lines = read_temp_raw()
-	while lines[0].strip()[-3:] != 'YES':
-		time.sleep(0.2)
-		lines = read_temp_raw()
-	equals_pos = lines[1].find('t=')
-	if equals_pos != -1:
-		temp_string = lines[1][equals_pos+2:]
+	try:
+		while lines[0].strip()[-3:] != 'YES':
+			time.sleep(0.2)
+			lines = read_temp_raw()
+		equals_pos = lines[1].find('t=')
+		if equals_pos != -1:
+			temp_string = lines[1][equals_pos+2:]
 		temp_c = float(temp_string) / 1000.0
-		return temp_c
+	except IndexError:
+		temp_c = default_val
+	return temp_c
 
 pinNr = 17
 run = True
@@ -42,7 +47,7 @@ device = wolk.Device(key="ywv7fn24o6alcy2l", password="e9b36d80-63a8-4d3a-aea8-e
 
 try:
 	wolk_device = wolk.WolkConnect( device=device, 
-#protocol=wolk.Protocol.JSON_SINGLE, 
+protocol=wolk.Protocol.JSON_SINGLE, 
 host="iot-elektronika.ftn.uns.ac.rs", port=1883)
 	wolk_device.connect()
 	print("#1 Wolk Connection successful.")
@@ -60,7 +65,6 @@ def to_Cloud(info1=bool, info2=int):
 def GPIO_read():
 	sensor_val = bool(GPIO.input(pinNr) )
 	sensor_val = not sensor_val
-	print('alcohol detected: ', str(sensor_val))
 	return sensor_val
 
 while run:
