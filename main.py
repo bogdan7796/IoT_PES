@@ -43,12 +43,32 @@ run = True
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(pinNr,GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
-device = wolk.Device(key="ywv7fn24o6alcy2l", password="e9b36d80-63a8-4d3a-aea8-e80cb9488aab")
+
+def readWolkCredentials():
+	import glob, os
+	import pandas
+	col_list = ["Key"]
+	col_list2 = ["Password"]
+	os.chdir("key/")
+	for file in glob.glob("*.csv"):
+		df = pandas.read_csv(file, usecols=col_list)
+		device_key = df["Key"]
+	for file in glob.glob("*.csv"):
+		df = pandas.read_csv(file, usecols=col_list2)
+		device_password = df["Password"]
+	return (device_key[0], device_password[0])
+
+wolk_credentials = readWolkCredentials()
+if wolk_credentials is not None:
+	device = wolk.Device(key=wolk_credentials[0], password=wolk_credentials[1])
+else:
+	print("Error reading credentials")
+	sys.exit()
 
 try:
-	wolk_device = wolk.WolkConnect( device=device, 
-protocol=wolk.Protocol.JSON_SINGLE, 
-host="iot-elektronika.ftn.uns.ac.rs", port=1883)
+	wolk_device = wolk.WolkConnect(
+device, host="iot-elektronika.ftn.uns.ac.rs", port=1883
+)
 	wolk_device.connect()
 	print("#1 Wolk Connection successful.")
 except RuntimeError as e:
